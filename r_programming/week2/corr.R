@@ -11,12 +11,12 @@ corr <- function(directory, threshold = 0) {
         ## NOTE: Do not round the result!
 
 	file_list <- list.files(directory, full.names=TRUE)
-	result_frame <- data.frame()
 
 	candidates <- complete(directory)
 
+	result_frame <- data.frame()
 	for (ndx in 1:nrow(candidates)) {
-		if (candidates[ndx, 2] >= threshold) {
+		if (candidates[ndx, 2] > threshold) {
 			raw_data <- read.csv(file_list[candidates[ndx, 1]])
 			good_flag <- complete.cases(raw_data)
 			filtered <- raw_data[good_flag,]
@@ -25,5 +25,12 @@ corr <- function(directory, threshold = 0) {
 		}
 	}
 
-	return(result_frame)
+	print(sprintf("result:%d", nrow(result_frame)))
+
+	if (nrow(result_frame) == 0) {
+		result_vector <- numeric(0)
+		return(result_vector)
+	} else {
+		return(result_frame[,1])
+	}
 }
