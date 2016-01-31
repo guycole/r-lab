@@ -1,3 +1,10 @@
+# assumes UCI HAR data set is available in the current directory
+zip_file <- "getdata-projectfiles-UCI HAR Dataset.zip"
+
+if (!file.exists("UCI HAR Dataset")) {
+	unzip(zip_file)
+}
+
 #
 # test data
 test_x <- read.table("UCI HAR Dataset/test/X_test.txt")
