@@ -1,5 +1,5 @@
 ## "Getting and Cleaning Data" Project "Code Book"
-The original [UCI](https://d396qusza40orc.cloudfront.net/getdata%2Fprojectfiles%2FUCI%20HAR%20Dataset.zip) contains an overview of the raw data (see "README.txt") data set.
+The original [UCI](https://d396qusza40orc.cloudfront.net/getdata%2Fprojectfiles%2FUCI%20HAR%20Dataset.zip) contains an overview of the raw data (see "README.txt"). 
 
 ### run_analysis.R
 1. Read UCI data set files
