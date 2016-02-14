@@ -6,8 +6,14 @@ yearEmissionsTotal <- function(target) {
     sum(temp$Emissions, na.rm = TRUE)
 }
 #
+nei_file <- "summarySCC_PM25.rds"
+zip_file <- "exdata-data-NEI_data.zip"
+#
+if (!file.exists(nei_file)) {
+    unzip(zip_file)
+}
+#
 NEI <- readRDS("summarySCC_PM25.rds")
-SCC <- readRDS("Source_Classification_Code.rds")
 #
 years <- c(1999, 2002, 2005, 2008)
 emissions = c()
