@@ -1,0 +1,75 @@
+---
+title: "steps"
+author: "Guy Cole"
+date: "August 28, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Steps
+
+Knitr Demonstration
+
+Read data file
+
+```{r readFile, echo=TRUE}
+fileName = "activity.csv"
+rawData <- read.csv(fileName, header=TRUE)
+```
+
+Discover facts about NA population
+
+```{r naFacts, echo=TRUE}
+missingStep <- is.na(rawData$steps)
+missingPopulation <- sum(missingStep)
+```
+Total quantity of NA step values:`r missingPopulation`
+
+Raw Daily mean, median and total steps
+
+```{r rawScore, echo=TRUE} 
+library(dplyr)
+rawDailyScore <- rawData %>% group_by(date) %>% summarise(totalSteps = sum(steps), meanSteps = mean(steps), medianSteps = median(steps))
+```
+
+```{r stepHistogram, echo=TRUE}
+hist(rawDailyScore$totalSteps, main="Histogram of Total Daily Steps", xlab="Total Daily Steps")
+```
+
+Cooked data set
+
+```{r cookedDataSet, echo=TRUE}
+date <- as.Date(rawData$date)
+interval <- rawData$interval
+steps <- vector(mode="integer", length=length(rawData$steps))
+dayFlag <- vector(mode="logical", length=length(date))
+
+weekDayCounter = 0
+weekEndCounter = 0
+
+library(pracma)
+for (ii in 1:length(date)) {
+  temp <- weekdays(date[ii])
+  if (strcmp(temp, "Saturday") || strcmp(temp, "Sunday")) {
+    dayFlag[ii] = TRUE
+    weekEndCounter = weekEndCounter + 1
+  } else {
+    dayFlag[ii] = FALSE
+    weekDayCounter = weekDayCounter + 1
+  }
+}
+
+cookedData = data.frame(date, interval, steps, dayFlag)
+
+cookedIntervalMean <- cookedData %>% group_by(interval) %>% summarise(meanSteps = mean(steps))
+```
+
+```{r linePlot, echo=TRUE}
+plot(cookedIntervalMean$meanSteps, type="l", main="Average Steps Time Series", xlab="Time", ylab="Steps")
+```
+
+
+
