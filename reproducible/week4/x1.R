@@ -1,0 +1,249 @@
+#
+library(dplyr)
+library(pracma)
+library(knitr)
+#
+getRawData <- function(fileName) {
+     read.csv(fileName, header=TRUE)
+} 
+#
+getNormalDollars <- function(basicValue, exponentValue) {
+    if (is.na(exponentValue)) {
+        exponentValue <- "0"
+    } else if (nchar(exponentValue) < 1) {
+        exponentValue <- "0"
+    } else if (strcmp(exponentValue, "b")) {
+        exponentValue <- "9"
+    } else if (strcmp(exponentValue, "B")) {
+        exponentValue <- "9"
+    } else if (strcmp(exponentValue, "h")) {
+        exponentValue <- "2"
+    } else if (strcmp(exponentValue, "H")) {
+        exponentValue <- "2"
+    } else if (strcmp(exponentValue, "k")) {
+        exponentValue <- "3"
+    } else if (strcmp(exponentValue, "K")) {
+        exponentValue <- "3"
+    } else if (strcmp(exponentValue, "m")) {
+        exponentValue <- "6"
+    } else if (strcmp(exponentValue, "M")) {
+        exponentValue <- "6"
+    }
+
+    basicValue * (10 ^ as.numeric(exponentValue))
+
+    if (is.na(basicValue)) {
+        return(0)
+    } else {
+        return(basicValue)
+    }
+}
+#
+eventConverter <- function(candidate) {
+    if (grepl("blizzard", candidate)) {
+        return("blizzard")
+    } else if (grepl("coastalstorm", candidate)) {
+        return("coastal storm")
+    } else if (grepl("cold temperature", candidate)) {
+        return("cold")
+    } else if (grepl("cold weather", candidate)) {
+        return("cold")
+    } else if (grepl("drought", candidate)) {
+        return("drought")
+    } else if (grepl("dry conditions", candidate)) {
+        return("dry")
+    } else if (grepl("dry hot", candidate)) {
+        return("dry")
+    } else if (grepl("dry spell", candidate)) {
+        return("dry")
+    } else if (grepl("dry pattern", candidate)) {
+        return("dry")
+    } else if (grepl("dry spell", candidate)) {
+        return("dry")
+    } else if (grepl("dry weather", candidate)) {
+        return("dry")
+    } else if (grepl("dryness", candidate)) {
+        return("dry")
+    } else if (grepl("dry microburst", candidate)) {
+        return("dry microburst")
+    } else if (grepl("dust devel", candidate)) {
+        return("dust devil")
+    } else if (grepl("duststorm", candidate)) {
+        return("dust storm")
+# note order, flash flood eval before flood
+    } else if (grepl("flash flood", candidate)) {
+        return("flash flood")
+    } else if (grepl("flood", candidate)) {
+        return("flood")
+    } else if (grepl("freez", candidate)) {
+        return("freeze")
+    } else if (grepl("frost", candidate)) {
+        return("frost")
+    } else if (grepl("funnel", candidate)) {
+        return("funnel")
+    } else if (grepl("gusty", candidate)) {
+        return("gusty")
+    } else if (grepl("hail", candidate)) {
+        return("hail")
+    } else if (grepl("heat", candidate)) {
+        return("hot")
+    } else if (grepl("hot", candidate)) {
+        return("hot")
+    } else if (grepl("high wind", candidate)) {
+        return("high wind")
+    } else if (grepl("hurricane", candidate)) {
+        return("hurricane")
+    } else if (grepl("ice", candidate)) {
+        return("ice")
+    } else if (grepl("lightning", candidate)) {
+        return("lightning")
+    } else if (grepl("lighting", candidate)) {
+        return("lightning")
+    } else if (grepl("lignting", candidate)) {
+        return("lightning")
+    } else if (grepl("mud slide", candidate)) {
+        return("mud slide")
+    } else if (grepl("mudslide", candidate)) {
+        return("mud slide")
+    } else if (grepl("rain", candidate)) {
+        return("rain")
+    } else if (grepl("rip current", candidate)) {
+        return("rip current")
+    } else if (grepl("sleet", candidate)) {
+        return("snow")
+    } else if (grepl("snow", candidate)) {
+        return("snow")
+    } else if (grepl("tstm", candidate)) {
+        return("thunderstorm wind")
+    } else if (grepl("thunderstorm wind", candidate)) {
+        return("thunderstorm wind")
+    } else if (grepl("thunderestorm", candidate)) {
+        return("thunderstorm wind")
+    } else if (grepl("thunderstorm w ind", candidate)) {
+        return("thunderstorm wind")
+    } else if (grepl("thunderstrom wind", candidate)) {
+        return("thunderstorm wind")
+    } else if (grepl("tunderstrom wins", candidate)) {
+        return("thunderstorm wind")
+    } else if (grepl("tunderstormwinds", candidate)) {
+        return("thunderstorm wind")
+    } else if (grepl("tunderstorm wind", candidate)) {
+        return("thunderstorm wind")
+    } else if (grepl("thunderstorm win", candidate)) {
+        return("thunderstorm wind")
+    } else if (grepl("thunderstorms", candidate)) {
+        return("thunderstorm wind")
+    } else if (grepl("thunderstormw", candidate)) {
+        return("thunderstorm wind")
+    } else if (grepl("thundertsorm", candidate)) {
+        return("thunderstorm wind")
+    } else if (grepl("tornado", candidate)) {
+        return("tornado")
+    } else if (grepl("torndao", candidate)) {
+        return("tornado")
+    } else if (grepl("tropical storm", candidate)) {
+        return("tropical storm")
+    } else if (grepl("volcanic", candidate)) {
+        return("volcanic")
+    } else if (grepl("vog", candidate)) {
+        return("fog")
+    } else if (grepl("water spout", candidate)) {
+        return("waterspout")
+    } else if (grepl("waterspout", candidate)) {
+        return("waterspout")
+    } else if (grepl("wild fires", candidate)) {
+        return("wildfire")
+    } else if (grepl("wild/forest", candidate)) {
+        return("wildfire")
+    } else if (grepl("wnd", candidate)) {
+        return("wind")
+    } else if (grepl("winds", candidate)) {
+        return("wind")
+    } else if (grepl("wind gusts", candidate)) {
+        return("wind")
+    } else if (grepl("wind storm", candidate)) {
+        return("wind")
+    } else if (grepl("winter", candidate)) {
+        return("winter")
+    } else {
+        return(candidate)
+    }
+}
+#
+getRank <- function(events, scoreFrame) {
+    results <- vector(mode="character", length=length(events))
+
+    for (ii in 1:length(events)) {
+    	results[ii] <- " "
+	for (jj in 1:length(scoreFrame$eventString)) {
+	    if (strcmp(events[ii], scoreFrame$eventString[jj])) {
+	       results[ii] <- as.character(jj)
+	    }
+	}
+    }
+
+    return(results)
+}
+#
+# load data
+fileName <- "stormdata.csv"
+fileName <- "testdata.csv"
+#fileName <- "/Users/gsc/downloads/test.csv.bz2"
+rawDataFrame <- getRawData(fileName)
+#
+# factor to string conversion
+propertyDamageDollars <- vector(mode="numeric", length=length(rawDataFrame$PROPDMG))
+propertyDamageString <- lapply(rawDataFrame$PROPDMGEXP, as.character)
+for (ii in 1:length(propertyDamageString)) {
+    propertyDamageDollars[ii] <- getNormalDollars(rawDataFrame$PROPDMG[ii], propertyDamageString[[ii]])
+}
+#
+# factor to string conversion
+cropDamageDollars <- vector(mode="numeric", length=length(rawDataFrame$CROPDMG))
+cropDamageString <- lapply(rawDataFrame$CROPDMGEXP, as.character)
+for (ii in 1:length(cropDamageString)) {
+    cropDamageDollars[ii] <- getNormalDollars(rawDataFrame$CROPDMG[ii], cropDamageString[[ii]])
+}
+#
+# factor to string conversion
+# force all strings lower case because EVTYPE entries are inconsistent (i.e. "Freeze" and "FREEZE")
+eventString <- vector(mode="character", length=length(rawDataFrame$EVTYPE))
+for (ii in 1:length(eventString)) {
+    eventString[ii] <- eventConverter(tolower(rawDataFrame$EVTYPE[ii]))
+}
+#
+# summarize intermediate results 
+damageDataFrame <- data.frame(propertyDamageDollars, cropDamageDollars, eventString, rawDataFrame$FATALITIES, rawDataFrame$INJURIES)
+#
+# summarize by event type
+eventDataFrame <- damageDataFrame %>% group_by(eventString) %>% summarise(propDam = sum(propertyDamageDollars), cropDam = sum(cropDamageDollars), fatality = sum(rawDataFrame.FATALITIES), injury = sum(rawDataFrame.INJURIES))
+#
+# results
+topFatal <- arrange(eventDataFrame, desc(fatality))
+topInjury <- arrange(eventDataFrame, desc(injury))
+#
+# results
+topCropDamage <- arrange(eventDataFrame, desc(cropDam))
+topPropertyDamage <- arrange(eventDataFrame, desc(propDam))
+#
+# composite table
+ndx <- 1:10
+#
+fatalEvent <- as.character(topFatal$eventString[ndx])
+injuryEvent <- as.character(topInjury$eventString[ndx])
+cropEvent <- as.character(topCropDamage$eventString[ndx])
+propertyEvent <- as.character(topPropertyDamage$eventString[ndx])
+#
+# vector of dominant event names
+topEvent <- sort(unique(c(fatalEvent, injuryEvent, cropEvent, propertyEvent)))
+#
+fatalRank <- getRank(topEvent, topFatal)
+injuryRank <- getRank(topEvent, topInjury)
+cropDmgRank <- getRank(topEvent, topCropDamage)
+propertyDmgRank <- getRank(topEvent, topPropertyDamage)
+#
+rankTable <- data.frame(topEvent, fatalRank, injuryRank, cropDmgRank, propertyDmgRank)
+kable(rankTable[1:length(topEvent),], format="markdown")
+#
+barplot(topFatal$fatality[ndx], legend=topFatal$eventString[ndx], col=c("red", "blue"), main="Top Fatality Events", ylab="Fatalities", xlab="Event Categories")
+#
