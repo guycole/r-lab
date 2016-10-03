@@ -1,5 +1,5 @@
 ---
-title: "part1"
+title: "Part 1: Statiscal Inference Project"
 author: "Guy Cole"
 date: "October 2, 2016"
 output: pdf_document
@@ -8,23 +8,88 @@ output: pdf_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+# Simulation Exercise
 
-## R Markdown
+## Overview
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+Investigate the exponential distribution in R and compare it w/the Central Limit Theorem.  
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+As mandated by assignment, exponential distribution will be simulated in R using rexp(n, lambda) where lambda is the rate parameter.  Distribution mean and standard deviation are 1/lambda and lambda = 0.2 for all simulations.
 
-```{r cars}
-summary(cars)
+Assigment mandates investigation of "distribution of averages of 40 exponentials" w/1000 simulations.
+
+## Simulations
+
+Initialization.
+
+```{r simulation1}
+set.seed(54321)
+lambda <- 0.2
+n <- 40
+simulationLimit <- 1000
+standardDeviation <- 1/lambda
 ```
 
-## Including Plots
+## Sample Mean vs Theoretical Mean
 
-You can also embed plots, for example:
+```{r sampleMeanVsTheoryMean}
+simulation <- rexp(simulationLimit * n, rate = lambda)
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+simulatedMean <- mean(simulation)
+simulatedMean
+
+theoreticalMean <- 1/lambda
+theoreticalMean
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+## Sample Variance vs Theoretical Variance
+
+```{r sampleVarianceVsTheoryVariance1}
+datum <- NULL
+for (ii in 1:simulationLimit) {
+  datum <- c(datum, mean(rexp(n, lambda)))
+}
+```
+
+### Illustrate sample mean vs theoretical mean.  
+
+```{r sampleVarianceVsTheoryVariance2}
+library(ggplot2)
+
+dataFrame1 <- data.frame(header = c("Sample Mean", "Theoretical Mean"), values = c(simulatedMean, theoreticalMean))
+
+gg <- ggplot(NULL, aes(x=datum))
+
+plot1 <- gg + geom_histogram(aes(y=..density..), color="blue", fill="red", binwidth=0.1) + labs(title = "Sample vs Theoretical Mean") + geom_density(color="black") + geom_vline(data=dataFrame1, aes(xintercept=values, linetype=header, color=header), show.legend=TRUE)
+
+plot1
+```
+
+Standard deviation
+
+```{r sampleVarianceVsTheoryVariance3}
+sd(datum)
+```
+
+Variance
+
+```{r sampleVarianceVsTheoryVariance4}
+varianceDatum <- sd(datum)^2
+varianceDatum
+```
+
+Theoretical variance
+
+```{r sampleVarianceVsTheoryVariance5}
+theoreticalDatum <- (1/lambda)^2/n
+theoreticalDatum
+```
+
+## Normal Distribution
+
+The distribution plot (above) clearly exhibits gaussian bell curve shape, indicated normal distribution.  Plot below uses qqnorm() to compare simulation to normal, indicating close approximation.
+
+```{r normalDist1}
+qqnorm(datum)
+qqline(datum, col=10)
+```
