@@ -1,0 +1,286 @@
+---
+title: "Storm Data Analysis"
+author: "Guy Cole"
+date: "9/30/2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+Perform analysis of [National Weather Service](http://www.weather.gov/) storm data to discover economic and health impact of storm events.  This project is an assignment from the [Reproducible Research](https://www.coursera.org/learn/reproducible-research) course.  
+
+## Synopsis
+This report presents a simple analysis of the NWS "Storm Data" weather file.  The raw file contains an event type (i.e. "flood", "tornado", etc) and some information about the event (i.e. damage amount, injuries and fatalities).  To produce this report, I summarize crop damage amount, property damage amount, injuries and fatalities for each event type, and then sort the results.  Unsurprisingly there are relatively few events which contribute the most impact.  "Impact Ranking" table illustrates details the top ten events.  Tornados, thunderstorms, hot temperatures and flood dominate the top rankings for all categories.
+
+## Data Processing
+NWS <quote>Storm Data</quote> is provided as a CSV file which can be easily read to produce a data frame.  The function <quote>getRawData</quote> returns a data frame w/raw contents.
+```{r getRawData}
+getRawData <- function(fileName) {
+    read.csv(fileName, header=TRUE)
+}
+```
+Property damage and crop damage values consist of a base value and a curious exponent value which require conversion.  The function <quote>getNormalDollars</quote> returns this value in dollars.  NA values are converted to zero.
+```{r getNormalDollars}
+getNormalDollars <- function(basicValue, exponentValue) {
+    if (is.na(exponentValue)) {
+        exponentValue <- "0"
+    } else if (nchar(exponentValue) < 1) {
+        exponentValue <- "0"
+    } else if (strcmp(exponentValue, "b")) {
+        exponentValue <- "9"
+    } else if (strcmp(exponentValue, "B")) {
+        exponentValue <- "9"
+    } else if (strcmp(exponentValue, "h")) {
+        exponentValue <- "2"
+    } else if (strcmp(exponentValue, "H")) {
+        exponentValue <- "2"
+    } else if (strcmp(exponentValue, "k")) {
+        exponentValue <- "3"
+    } else if (strcmp(exponentValue, "K")) {
+        exponentValue <- "3"
+    } else if (strcmp(exponentValue, "m")) {
+        exponentValue <- "6"
+    } else if (strcmp(exponentValue, "M")) {
+        exponentValue <- "6"
+    }
+
+    basicValue * (10 ^ as.numeric(exponentValue))
+
+    if (is.na(basicValue)) {
+        return(0)
+    } else {
+        return(basicValue)
+    }
+}
+```
+Event data suffers from poor spelling, inconsistent case and naming which makes grouping a challenge.  The function <quote>eventConverter</quote> attempts to correct these issues by forcing all strings to lower case and then matching strings for consolidation.  The original NWS <quote>Storm Data</quote> yielded 898 event types and after conversion there are 298 event types.
+```{r eventConverter}
+eventConverter <- function(candidate) {
+    if (grepl("blizzard", candidate)) {
+        return("blizzard")
+    } else if (grepl("coastalstorm", candidate)) {
+        return("coastal storm")
+    } else if (grepl("cold temperature", candidate)) {
+        return("cold")
+    } else if (grepl("cold weather", candidate)) {
+        return("cold")
+    } else if (grepl("drought", candidate)) {
+        return("drought")
+    } else if (grepl("dry conditions", candidate)) {
+        return("dry")
+    } else if (grepl("dry hot", candidate)) {
+        return("dry")
+    } else if (grepl("dry spell", candidate)) {
+        return("dry")
+    } else if (grepl("dry pattern", candidate)) {
+        return("dry")
+    } else if (grepl("dry spell", candidate)) {
+        return("dry")
+    } else if (grepl("dry weather", candidate)) {
+        return("dry")
+    } else if (grepl("dryness", candidate)) {
+        return("dry")
+    } else if (grepl("dry microburst", candidate)) {
+        return("dry microburst")
+    } else if (grepl("dust devel", candidate)) {
+        return("dust devil")
+    } else if (grepl("duststorm", candidate)) {
+        return("dust storm")
+# note order, flash flood eval before flood
+    } else if (grepl("flash flood", candidate)) {
+        return("flash flood")
+    } else if (grepl("flood", candidate)) {
+        return("flood")
+    } else if (grepl("freez", candidate)) {
+        return("freeze")
+    } else if (grepl("frost", candidate)) {
+        return("frost")
+    } else if (grepl("funnel", candidate)) {
+        return("funnel")
+    } else if (grepl("gusty", candidate)) {
+        return("gusty")
+    } else if (grepl("hail", candidate)) {
+        return("hail")
+    } else if (grepl("heat", candidate)) {
+        return("hot")
+    } else if (grepl("hot", candidate)) {
+        return("hot")
+    } else if (grepl("high wind", candidate)) {
+        return("high wind")
+    } else if (grepl("hurricane", candidate)) {
+        return("hurricane")
+    } else if (grepl("ice", candidate)) {
+        return("ice")
+    } else if (grepl("lightning", candidate)) {
+        return("lightning")
+    } else if (grepl("lighting", candidate)) {
+        return("lightning")
+    } else if (grepl("lignting", candidate)) {
+        return("lightning")
+    } else if (grepl("mud slide", candidate)) {
+        return("mud slide")
+    } else if (grepl("mudslide", candidate)) {
+        return("mud slide")
+    } else if (grepl("rain", candidate)) {
+        return("rain")
+    } else if (grepl("rip current", candidate)) {
+        return("rip current")
+    } else if (grepl("sleet", candidate)) {
+        return("snow")
+    } else if (grepl("snow", candidate)) {
+        return("snow")
+    } else if (grepl("tstm", candidate)) {
+        return("thunderstorm wind")
+    } else if (grepl("thunderstorm wind", candidate)) {
+        return("thunderstorm wind")
+    } else if (grepl("thunderestorm", candidate)) {
+        return("thunderstorm wind")
+    } else if (grepl("thunderstorm w ind", candidate)) {
+        return("thunderstorm wind")
+    } else if (grepl("thunderstrom wind", candidate)) {
+        return("thunderstorm wind")
+    } else if (grepl("tunderstrom wins", candidate)) {
+        return("thunderstorm wind")
+    } else if (grepl("tunderstormwinds", candidate)) {
+        return("thunderstorm wind")
+    } else if (grepl("tunderstorm wind", candidate)) {
+        return("thunderstorm wind")
+    } else if (grepl("thunderstorm win", candidate)) {
+        return("thunderstorm wind")
+    } else if (grepl("thunderstorms", candidate)) {
+        return("thunderstorm wind")
+    } else if (grepl("thunderstormw", candidate)) {
+        return("thunderstorm wind")
+    } else if (grepl("thundertsorm", candidate)) {
+        return("thunderstorm wind")
+    } else if (grepl("tornado", candidate)) {
+        return("tornado")
+    } else if (grepl("torndao", candidate)) {
+        return("tornado")
+    } else if (grepl("tropical storm", candidate)) {
+        return("tropical storm")
+    } else if (grepl("volcanic", candidate)) {
+        return("volcanic")
+    } else if (grepl("vog", candidate)) {
+        return("fog")
+    } else if (grepl("water spout", candidate)) {
+        return("waterspout")
+    } else if (grepl("waterspout", candidate)) {
+        return("waterspout")
+    } else if (grepl("wild fires", candidate)) {
+        return("wildfire")
+    } else if (grepl("wild/forest", candidate)) {
+        return("wildfire")
+    } else if (grepl("wnd", candidate)) {
+        return("wind")
+    } else if (grepl("winds", candidate)) {
+        return("wind")
+    } else if (grepl("wind gusts", candidate)) {
+        return("wind")
+    } else if (grepl("wind storm", candidate)) {
+        return("wind")
+    } else if (grepl("winter", candidate)) {
+        return("winter")
+    } else {
+        return(candidate)
+    }
+}
+```
+Execute this application.  
+```{r executeApplication, warning=FALSE}
+library(dplyr)
+library(knitr)
+library(pracma)
+
+fileName <- "/Users/gsc/github/r-lab/reproducible/week4/repdata%2Fdata%2FStormData.csv.bz2"
+rawDataFrame <- getRawData(fileName)
+#
+# factor to string conversion
+propertyDamageDollars <- vector(mode="numeric", length=length(rawDataFrame$PROPDMG))
+propertyDamageString <- lapply(rawDataFrame$PROPDMGEXP, as.character)
+for (ii in 1:length(propertyDamageString)) {
+    propertyDamageDollars[ii] <- getNormalDollars(rawDataFrame$PROPDMG[ii], propertyDamageString[[ii]])
+}
+#
+# factor to string conversion
+cropDamageDollars <- vector(mode="numeric", length=length(rawDataFrame$CROPDMG))
+cropDamageString <- lapply(rawDataFrame$CROPDMGEXP, as.character)
+for (ii in 1:length(cropDamageString)) {
+    cropDamageDollars[ii] <- getNormalDollars(rawDataFrame$CROPDMG[ii], cropDamageString[[ii]])
+}
+#
+# factor to string conversion
+# force all strings lower case because EVTYPE entries are inconsistent (i.e. "Freeze" and "FREEZE")
+eventString <- vector(mode="character", length=length(rawDataFrame$EVTYPE))
+for (ii in 1:length(eventString)) {
+    eventString[ii] <- eventConverter(tolower(rawDataFrame$EVTYPE[ii]))
+}
+#
+# summarize intermediate results
+damageDataFrame <- data.frame(propertyDamageDollars, cropDamageDollars, eventString, rawDataFrame$FATALITIES, rawDataFrame$INJURIES)
+#
+# summarize by event type
+eventDataFrame <- damageDataFrame %>% group_by(eventString) %>% summarise(propDam = sum(propertyDamageDollars), cropDam = sum(cropDamageDollars), fatality = sum(rawDataFrame.FATALITIES), injury = sum(rawDataFrame.INJURIES))
+#
+# results
+topFatal <- arrange(eventDataFrame, desc(fatality))
+topInjury <- arrange(eventDataFrame, desc(injury))
+#
+# results
+topCropDamage <- arrange(eventDataFrame, desc(cropDam))
+topPropertyDamage <- arrange(eventDataFrame, desc(propDam))
+#
+# discover dominant events
+ndx <- 1:10
+#
+fatalEvent <- as.character(topFatal$eventString[ndx])
+injuryEvent <- as.character(topInjury$eventString[ndx])
+cropEvent <- as.character(topCropDamage$eventString[ndx])
+propertyEvent <- as.character(topPropertyDamage$eventString[ndx])
+#
+topEvent <- sort(unique(c(fatalEvent, injuryEvent, cropEvent, propertyEvent)))
+```
+
+## Results
+Results below indicate that tornadoes, thunderstorms and hail dominate fatalities, injuries and property damage.
+
+```{r showResults}
+getRank <- function(events, scoreFrame) {
+  results <- vector(mode="character", length=length(events))
+
+  for (ii in 1:length(events)) {
+    results[ii] <- " "
+    for (jj in 1:length(scoreFrame$eventString)) {
+      if (strcmp(events[ii], scoreFrame$eventString[jj])) {
+        results[ii] <- as.character(jj)
+      }
+    }
+  }
+
+  return(results)
+}
+
+ndx <- 1:10
+fatalRank <- getRank(topEvent, topFatal)
+injuryRank <- getRank(topEvent, topInjury)
+cropDmgRank <- getRank(topEvent, topCropDamage)
+propertyDmgRank <- getRank(topEvent, topPropertyDamage)
+#
+```
+
+### Impact Rank (table)
+
+```{r impactRank}
+rankTable <- data.frame(topEvent, fatalRank, injuryRank, cropDmgRank, propertyDmgRank)
+kable(rankTable[1:length(topEvent),], caption="Impact Rank", format="markdown")
+```
+
+```{r graphics, echo=FALSE}
+barplot(topFatal$fatality[ndx], legend=topFatal$eventString[ndx], col=c("red", "blue"), main="Top Fatality Events", ylab="Fatalities", xlab="Event Categories")
+
+barplot(topInjury$injury[ndx], legend=topInjury$eventString[ndx], col=c("red", "blue"), main="Top Injury Events", ylab="Injuries", xlab="Event Categories")
+```
